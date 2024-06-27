@@ -7,9 +7,9 @@
 - [x] Manager manage siapa aja yang merupakan membership admin dan event admin
 - [x] Membership fee per tier bisa diubah oleh Manager dengan setFee() dan membership akan berlaku selama 1 bulan
 - [x] Tambahin function isMember() buat cek status membership
-- [ ] Event admin bisa createEvent() dan cancelEvent() dengan kuota attendee.
-- [ ] Hanya member yang bisa registerEvent() dan hanya bisa selama ada kuota.
-- [ ] Mau lebih susah? 50% kuota untuk early access VIP (ada earlyAccessDuration di struct eventDetails). Kalau ada sisa dari 50% itu, bisa dibagi ke Regular dan Gold.
+- [x] Event admin bisa createEvent() dan cancelEvent() dengan kuota attendee.
+- [x] Hanya member yang bisa registerEvent() dan hanya bisa selama ada kuota.
+- [x] Mau lebih susah? 50% kuota untuk early access VIP (ada earlyAccessDuration di struct eventDetails). Kalau ada sisa dari 50% itu, bisa dibagi ke Regular dan Gold.
 
 ## Description
 
