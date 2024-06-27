@@ -188,6 +188,9 @@ describe('EventMembershipManagement', () => {
 
         await eventMembershipManagementAsMember.write.register([tier], { value: registrationFee });
 
+        expect(await eventMembershipManagementAsMember.read.isMember([getAddress(member1.account.address)])).to.be
+          .false;
+
         expect(await publicClient.getBalance({ address: eventMembershipManagementAsMember.address })).to.equal(
           registrationFee
         );
@@ -228,6 +231,9 @@ describe('EventMembershipManagement', () => {
 
         await eventMembershipManagementAsMember.write.register([tier], { value: registrationFee });
 
+        expect(await eventMembershipManagementAsMember.read.isMember([getAddress(member1.account.address)])).to.be
+          .false;
+
         await eventMembershipManagementAsMemberAdmin.write.approveRegistration([getAddress(member1.account.address)]);
 
         await expect(
@@ -236,6 +242,36 @@ describe('EventMembershipManagement', () => {
 
         expect(await eventMembershipManagementAsMember.read.isMember([getAddress(member1.account.address)])).to.be.true;
       });
+    });
+
+    it('can reject registration', async () => {
+      const { eventMembershipManagementAsMember, eventMembershipManagementAsMemberAdmin, member1, publicClient } =
+        await loadFixture(fixtureFn);
+
+      expect(await eventMembershipManagementAsMember.read.isMember([getAddress(member1.account.address)])).to.be.false;
+
+      const tier = MembershipTier.Gold;
+      const registrationFee = 2n;
+
+      await eventMembershipManagementAsMember.write.register([tier], { value: registrationFee });
+
+      expect(
+        await publicClient.getBalance({
+          address: getAddress(eventMembershipManagementAsMemberAdmin.address),
+        })
+      ).to.equal(registrationFee);
+
+      expect(await eventMembershipManagementAsMember.read.isMember([getAddress(member1.account.address)])).to.be.false;
+
+      await eventMembershipManagementAsMemberAdmin.write.rejectRegistration([getAddress(member1.account.address)]);
+
+      expect(await eventMembershipManagementAsMember.read.isMember([getAddress(member1.account.address)])).to.be.false;
+
+      expect(
+        await publicClient.getBalance({
+          address: getAddress(eventMembershipManagementAsMemberAdmin.address),
+        })
+      ).to.equal(0n);
     });
   });
 });
