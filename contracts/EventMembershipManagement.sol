@@ -134,6 +134,11 @@ contract EventMembershipManagement {
         _;
     }
 
+    modifier onlyEventAdmin() {
+        require(adminMappings[AdminType.Event][msg.sender], "Not Event admin");
+        _;
+    }
+
     // Function to receive Ether. msg.data must be empty
     receive() external payable {}
 
