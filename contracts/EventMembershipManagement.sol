@@ -21,10 +21,21 @@ contract EventMembershipManagement {
         uint256 approvedAt;
     }
 
+    struct Event {
+        uint256 usedQuota;
+        uint256 maxQuota;
+        uint256 earlyAccessEndsAt;
+        uint256 cancelledAt;
+    }
+
     address public owner;
+
     mapping(AdminType => mapping(address => bool)) adminMappings;
     mapping(MembershipTier => uint256) membershipPriceMappings;
     mapping(address => MembershipData) membershipDataMappings;
+
+    uint256 latestEventId = 1;
+    mapping(uint256 => Event) eventMappings;
 
     event SetAdmin(AdminType adminType, address user, bool isActive);
     event SetFee(MembershipTier membershipTier, uint256 fee);
@@ -33,6 +44,14 @@ contract EventMembershipManagement {
         uint256 registrationFee,
         address member
     );
+    event ApproveRegistration(address user);
+    event RejectRegistration(address user);
+    event CreateEvent(
+        uint256 eventId,
+        uint256 maxQuota,
+        uint256 earlyAccessEndsAt
+    );
+    event CancelEvent(uint256 eventId, uint256 cancelledAt);
 
     constructor() {
         owner = msg.sender;
@@ -109,6 +128,8 @@ contract EventMembershipManagement {
 
     function approveRegistration(address user) public onlyMemberAdmin {
         membershipDataMappings[user].approvedAt = block.timestamp;
+
+        emit ApproveRegistration(user);
     }
 
     function rejectRegistration(address user) public onlyMemberAdmin {
@@ -119,10 +140,67 @@ contract EventMembershipManagement {
 
         (bool ok, ) = payable(user).call{value: registrationFee}("");
         require(ok, "Failed to reject registration");
+
+        emit RejectRegistration(user);
+    }
+
+    function createEvent(uint256 maxQuota) public onlyEventAdmin {
+        uint256 earlyAccessEndsAt = block.timestamp + 3 days;
+
+        eventMappings[latestEventId] = Event({
+            usedQuota: 0,
+            maxQuota: maxQuota,
+            earlyAccessEndsAt: earlyAccessEndsAt,
+            cancelledAt: 0
+        });
+
+        emit CreateEvent(latestEventId, maxQuota, earlyAccessEndsAt);
+
+        latestEventId++;
+    }
+
+    function cancelEvent(uint256 eventId) public onlyEventAdmin {
+        uint256 cancelledAt = block.timestamp;
+
+        eventMappings[eventId].cancelledAt = cancelledAt;
+
+        emit CancelEvent(eventId, cancelledAt);
+    }
+
+    function registerEvent(uint256 eventId) public onlyActiveMember {
+        Event memory eventData = eventMappings[eventId];
+        MembershipData memory membershipData = membershipDataMappings[
+            msg.sender
+        ];
+
+        bool isEarlyAccess = block.timestamp <= eventData.earlyAccessEndsAt;
+        MembershipTier memberTier = membershipData.tier;
+
+        require(
+            isEarlyAccess && memberTier == MembershipTier.Vip,
+            "Early access is exclusive to VIP only"
+        );
+
+        uint256 maxQuotaDivisor = membershipData.tier == MembershipTier.Vip
+            ? 1
+            : 2;
+        uint256 actualMaxQuota = eventData.maxQuota / maxQuotaDivisor;
+
+        eventMappings[eventId].usedQuota += 1;
+
+        require(
+            eventMappings[eventId].usedQuota <= actualMaxQuota,
+            "No more quota available"
+        );
     }
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not owner");
+        _;
+    }
+
+    modifier onlyActiveMember() {
+        require(isMember(msg.sender), "Not active member");
         _;
     }
 
