@@ -29,6 +29,13 @@ contract EventMembershipManagement {
         uint256 cancelledAt;
     }
 
+    struct Event {
+        uint256 usedQuota;
+        uint256 maxQuota;
+        uint256 earlyAccessEndsAt;
+        uint256 cancelledAt;
+    }
+
     address public owner;
 
     mapping(AdminType => mapping(address => bool)) adminMappings;
